@@ -1,0 +1,21 @@
+package layout
+
+templ Base(title string, includeChart bool) {
+	<!DOCTYPE html>
+	<html lang="ja">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } | データ成熟度評価サービス</title>
+			<link rel="stylesheet" href="/public/css/style.css"/>
+			<script src="/public/js/htmx.min.js"></script>
+			<script src="/public/js/util.js"></script>
+			if includeChart {
+				<script src="/public/js/chart.umd.js"></script>
+			}
+		</head>
+		<body class="bg-gray-50 min-h-screen text-gray-900">
+			{ children... }
+		</body>
+	</html>
+}

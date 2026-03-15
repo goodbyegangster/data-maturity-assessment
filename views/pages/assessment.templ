@@ -1,0 +1,159 @@
+package pages
+
+import (
+	"data-maturity-assessment/internal/model"
+	"data-maturity-assessment/views/components"
+	"data-maturity-assessment/views/layout"
+)
+
+// AssessmentBody はレイアウトを含まない測定画面のコンテンツ（htmx Partial 用）。
+templ AssessmentBody(m *model.DataMaturityModel, groups []components.TopicGroup) {
+	<div class="max-w-3xl mx-auto px-4 py-8">
+		<div class="flex items-center justify-between mb-6 print:hidden">
+			<h1 class="text-2xl font-bold text-gray-900">{ m.Title }</h1>
+			<a href="/" class="text-sm text-gray-500 hover:text-gray-700 underline">← モデル選択に戻る</a>
+		</div>
+		<form id="assessment-form" action="/result" method="post">
+			<input type="hidden" name="model" value={ m.Model }/>
+			<!-- 回答状況バー -->
+			<div class="mb-5 rounded-lg bg-white border border-gray-200 shadow-sm px-5 py-3 flex items-center gap-4 print:hidden">
+				<span class="text-sm font-medium text-gray-700">回答状況</span>
+				<div class="flex-1 rounded-full bg-gray-200 h-2 overflow-hidden">
+					<div id="progress-bar-fill" class="h-2 bg-blue-500 rounded-full transition-all" style="width:0%"></div>
+				</div>
+				<span class="text-sm font-semibold text-gray-800 whitespace-nowrap">
+					<span id="answered-count">0</span> / <span id="total-count">0</span> 問
+				</span>
+			</div>
+			<!-- バリデーションエラー -->
+			<div id="error-message" class="hidden mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 print:hidden"></div>
+			<!-- トピックエリア選択 -->
+			<div class="mb-6 print:hidden">
+				<p class="text-sm font-medium text-gray-700 mb-2">評価対象のトピックエリア</p>
+				<div
+					id="topic-selectors"
+					class="flex flex-wrap gap-2"
+					hx-get="/partials/questions"
+					hx-include="[name='topicAreas']:checked,[name='model']"
+					hx-target="#questions-container"
+					hx-swap="innerHTML"
+					hx-trigger="topicChanged"
+				>
+					for _, group := range groups {
+						<label class="flex items-center gap-1.5 rounded-full border border-gray-300 bg-white px-3 py-1 text-sm cursor-pointer hover:border-blue-400 has-checked:border-blue-500 has-checked:bg-blue-50 has-checked:text-blue-700">
+							<input
+								type="checkbox"
+								name="topicAreas"
+								value={ group.Topic }
+								class="accent-blue-600"
+								checked
+							/>
+							{ group.Topic }
+						</label>
+					}
+				</div>
+			</div>
+			<!-- 質問一覧 -->
+			<div id="questions-container">
+				@components.QuestionAccordion(groups)
+			</div>
+			<!-- アクションボタン -->
+			<div class="mt-6 flex justify-end print:hidden">
+				<button
+					type="submit"
+					class="rounded-lg bg-blue-600 px-8 py-2.5 font-semibold text-white hover:bg-blue-700 active:bg-blue-800 transition-colors"
+				>
+					結果を表示する
+				</button>
+			</div>
+		</form>
+	</div>
+	<script>
+		// 全回答の永続ストア（トピックの追加/削除をまたいで保持）
+		var allAnswers = {};
+
+		// 回答状況バーの更新
+		function updateProgress() {
+			var groups = new Set();
+			var answered = new Set();
+			document.querySelectorAll('#questions-container input[type="radio"]').forEach(function(el) {
+				groups.add(el.name);
+				if (el.checked) answered.add(el.name);
+			});
+			var total = groups.size;
+			var done = answered.size;
+			document.getElementById('answered-count').textContent = done;
+			document.getElementById('total-count').textContent = total;
+			var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+			document.getElementById('progress-bar-fill').style.width = pct + '%';
+		}
+
+		// ラジオ変更時に allAnswers へ逐次記録
+		document.getElementById('questions-container').addEventListener('change', function(e) {
+			if (e.target.type === 'radio') {
+				allAnswers[e.target.name] = e.target.value;
+				updateProgress();
+			}
+		});
+
+		// トピック変更後に allAnswers から復元（htmx v2: afterSettle が swap 要素から bubble）
+		document.getElementById('questions-container').addEventListener('htmx:afterSettle', function() {
+			document.querySelectorAll('#questions-container input[type="radio"]').forEach(function(input) {
+				if (allAnswers[input.name] !== undefined && input.value === allAnswers[input.name]) {
+					input.checked = true;
+				}
+			});
+			updateProgress();
+		});
+
+		// トピックエリア変更: 0件になる場合はリクエストを中止
+		document.getElementById('topic-selectors').addEventListener('change', function(e) {
+			if (e.target.type !== 'checkbox') return;
+			var checked = document.querySelectorAll('input[name="topicAreas"]:checked').length;
+			if (checked === 0) {
+				e.target.checked = true;
+				showError('少なくとも1つのトピックエリアを選択してください。');
+				return;
+			}
+			hideError();
+			htmx.trigger(document.getElementById('topic-selectors'), 'topicChanged');
+		});
+
+		// エラー表示
+		function showError(msg) {
+			var el = document.getElementById('error-message');
+			el.textContent = msg;
+			el.classList.remove('hidden');
+		}
+
+		function hideError() {
+			document.getElementById('error-message').classList.add('hidden');
+		}
+
+		// フォーム送信前バリデーション: 未回答チェック
+		document.getElementById('assessment-form').addEventListener('submit', function(e) {
+			var groups = new Set();
+			var answered = new Set();
+			document.querySelectorAll('#questions-container input[type="radio"]').forEach(function(el) {
+				groups.add(el.name);
+				if (el.checked) answered.add(el.name);
+			});
+			if (answered.size < groups.size) {
+				var unanswered = groups.size - answered.size;
+				if (!confirm('未回答の質問が ' + unanswered + ' 問あります。\n未回答の質問は最小レベルとして扱われます。\nこのまま測定を進めますか？')) {
+					e.preventDefault();
+				}
+			}
+		});
+
+		// 初期表示時の進捗更新
+		updateProgress();
+	</script>
+}
+
+// Assessment は測定画面のフルページ。
+templ Assessment(m *model.DataMaturityModel, groups []components.TopicGroup) {
+	@layout.Base("測定", false) {
+		@AssessmentBody(m, groups)
+	}
+}

@@ -1,0 +1,27 @@
+# --- Version Control ---
+.git
+.gitignore
+
+# --- IDE / OS ---
+.vscode/
+.DS_Store
+Thumbs.db
+memory/
+
+# --- Backend Build Artifacts ---
+bin/
+tmp/
+*_templ.go
+
+# --- Frontend Build Artifacts ---
+node_modules/
+public/css/style.css
+
+# --- Source Data (not needed in build context) ---
+data/source/
+
+# --- Dev / CI / Docs ---
+.github/
+.air.toml
+Makefile
+LICENSE.md

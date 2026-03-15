@@ -1,0 +1,16 @@
+# --- IDE / OS ---
+.vscode/
+.DS_Store
+Thumbs.db
+
+# --- Backend Build Artifacts ---
+bin/
+tmp/
+*_templ.go
+
+# --- Frontend Build Artifacts ---
+public/css/style.css
+node_modules/
+
+# --- Environment Variables ---
+memory/

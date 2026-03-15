@@ -1,0 +1,21 @@
+package components
+
+// ModelDescription は評価モデルの説明文 Partial。
+// descriptionHTML には Markdown を HTML に変換済みの文字列を渡す。
+// トップページでモデルを選択した際に htmx によってロードされる。
+templ ModelDescription(descriptionHTML string) {
+	<div
+		class="
+			text-sm text-gray-700 leading-relaxed
+			[&_a]:text-blue-600 [&_a]:underline [&_a]:decoration-blue-400 [&_a]:hover:text-blue-800
+			[&_blockquote]:my-2 [&_blockquote]:border-l-4 [&_blockquote]:border-blue-300
+			[&_blockquote]:bg-blue-50 [&_blockquote]:rounded-r-md
+			[&_blockquote]:pl-3 [&_blockquote]:pr-2 [&_blockquote]:py-1
+			[&_blockquote]:text-gray-600 [&_blockquote]:italic
+			[&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5
+		"
+	>
+		@templ.Raw(descriptionHTML)
+	</div>
+	<script>openLinksInNewTab('model-description');</script>
+}

@@ -1,0 +1,144 @@
+package pages
+
+import (
+	"data-maturity-assessment/internal/model"
+	"data-maturity-assessment/views/layout"
+)
+
+// TopBody はレイアウトを含まないトップページのコンテンツ（htmx Partial 用）。
+templ TopBody(models []*model.DataMaturityModel) {
+	<div class="max-w-2xl mx-auto px-4 py-12">
+		<header class="mb-10 text-center">
+			<h1 class="text-3xl font-bold text-gray-900 mb-2">データ成熟度評価サービス</h1>
+			<p class="text-gray-600">組織のデータ成熟度を可視化する自己測定ツールです。</p>
+		</header>
+		<!-- 評価モデル選択フォーム -->
+		<section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-8">
+			<h2 class="text-lg font-semibold text-gray-800 mb-4">評価モデルの選択</h2>
+			<form id="model-form" action="/assessment" method="get">
+				<div class="space-y-3 mb-5">
+					for _, m := range models {
+						<label class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-blue-400 has-checked:border-blue-500 has-checked:bg-blue-50">
+							<input
+								type="radio"
+								name="model"
+								value={ m.Model }
+								class="accent-blue-600"
+								hx-get="/partials/model-description"
+								hx-vals={ `{"model":"` + m.Model + `"}` }
+								hx-target="#model-description"
+								hx-swap="innerHTML"
+							/>
+							<span class="font-medium text-gray-800">{ m.Title }</span>
+						</label>
+					}
+				</div>
+				<!-- モデル説明エリア -->
+				<div
+					id="model-description"
+					class="mb-5 min-h-12 rounded-lg bg-gray-50 border border-gray-100 px-4 py-3 text-sm text-gray-600"
+				>
+					<span class="text-gray-400">評価モデルを選択すると説明が表示されます。</span>
+				</div>
+				<!-- バリデーションエラー -->
+				<p id="model-error" class="hidden mb-3 text-sm text-red-600"></p>
+				<button
+					type="submit"
+					onclick="return validateModelSelection()"
+					class="w-full rounded-lg bg-blue-600 px-6 py-2.5 font-semibold text-white hover:bg-blue-700 active:bg-blue-800 transition-colors"
+				>
+					測定を開始する
+				</button>
+			</form>
+		</section>
+		<!-- ライセンス情報 -->
+		<section class="rounded-xl border border-gray-200 bg-white shadow-sm p-6 print:hidden">
+			<h2 class="text-base font-semibold text-gray-800 mb-3">ライセンスと帰属 (License &amp; Attribution)</h2>
+			<p class="text-sm text-gray-700 mb-4">
+				本プロジェクトは
+				<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ja" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline hover:text-blue-800">クリエイティブ・コモンズ 表示 - 非営利 - 継承 4.0 国際 (CC BY-NC-SA 4.0)</a>
+				の下で提供されています。
+			</p>
+			<p class="text-sm font-medium text-gray-700 mb-2">出典資料 (Source Materials)</p>
+			<p class="text-sm text-gray-600 mb-1">本サービスで使用している評価項目データは、以下の資料に基づいています。</p>
+			<ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside mb-3">
+				<li>
+					独立行政法人情報処理推進機構 (IPA)
+					<ul class="list-disc list-inside pl-4 mt-1 space-y-0.5">
+						<li>
+							資料名:
+							<a href="https://www.ipa.go.jp/digital/data/data-spaces-academy.html" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline hover:text-blue-800">データマチュリティアセスメント 解説書</a>
+						</li>
+						<li>
+							ライセンス:
+							<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ja" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline hover:text-blue-800">CC BY-NC-SA 4.0</a>
+						</li>
+					</ul>
+				</li>
+			</ol>
+			<p class="text-sm text-gray-600 mb-1 mt-4">上記資料は、IPA が以下の政府資料を翻訳・加工したものです。</p>
+			<ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+				<li>
+					英国政府 (UK Government)
+					<ul class="list-disc list-inside pl-4 mt-1 space-y-0.5">
+						<li>
+							資料名:
+							<a href="https://www.gov.uk/government/publications/data-maturity-assessment-for-government-framework" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline hover:text-blue-800">Data maturity assessment for government: framework</a>
+						</li>
+						<li>
+							ライセンス:
+							<a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline hover:text-blue-800">Open Government Licence v3.0</a>
+							(CC BY 4.0 互換)
+						</li>
+					</ul>
+				</li>
+				<li>
+					豪州政府 (Australian Government)
+					<ul class="list-disc list-inside pl-4 mt-1 space-y-0.5">
+						<li>
+							資料名:
+							<a href="https://www.finance.gov.au/government/public-data/public-data-policy/data-maturity-assessment-tool" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline hover:text-blue-800">Data Maturity Assessment Tool</a>
+						</li>
+						<li>
+							ライセンス:
+							<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline hover:text-blue-800">Creative Commons Attribution 4.0 International (CC BY 4.0)</a>
+						</li>
+						<li>注記: 連邦の紋章（Commonwealth Coat of Arms）はライセンス対象外です</li>
+					</ul>
+				</li>
+			</ol>
+			<div class="mt-4 pt-4 border-t border-gray-100">
+				<a
+					href="https://github.com/goodbyegangster/data-maturity-assessment/tree/main"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+						<path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"></path>
+					</svg>
+					data-maturity-assessment
+				</a>
+			</div>
+		</section>
+	</div>
+	<script>
+		function validateModelSelection() {
+			var selected = document.querySelector('input[name="model"]:checked');
+			if (!selected) {
+				var el = document.getElementById('model-error');
+				el.textContent = '評価モデルを選択してください。';
+				el.classList.remove('hidden');
+				return false;
+			}
+			return true;
+		}
+	</script>
+}
+
+// Top はトップページのフルページ。
+templ Top(models []*model.DataMaturityModel) {
+	@layout.Base("ホーム", false) {
+		@TopBody(models)
+	}
+}

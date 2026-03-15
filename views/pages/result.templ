@@ -1,0 +1,186 @@
+package pages
+
+import (
+	"data-maturity-assessment/views/layout"
+	"data-maturity-assessment/views/shared"
+	"fmt"
+)
+
+// AssessmentResult は結果一覧表示用の1件のアセスメント回答データ。
+type AssessmentResult struct {
+	Summary       string
+	SelectedLevel int
+	SelectedName  string
+	SelectedText  string
+}
+
+// ResultTopicGroup は結果一覧のトピックグループ。
+type ResultTopicGroup struct {
+	Topic    string
+	Score    int
+	Selected bool
+	Results  []AssessmentResult
+}
+
+// ResultData は結果表示画面に必要なデータをまとめた構造体。
+type ResultData struct {
+	ModelTitle      string
+	LabelsJSON      string // Chart.js 用 JSON 配列（トピック名）
+	ScoresJSON      string // Chart.js 用 JSON 配列（スコア）
+	SelectedJSON    string // Chart.js 用 JSON 配列（選択フラグ）
+	PointColorsJSON string // Chart.js 用 JSON 配列（点色 rgb 文字列）
+	MinLevel        int
+	MaxLevel        int
+	TopicGroups     []ResultTopicGroup
+}
+
+// ResultBody はレイアウトを含まない結果表示画面のコンテンツ（htmx Partial 用）。
+templ ResultBody(data ResultData) {
+	<div class="max-w-3xl mx-auto px-4 py-8">
+		<div class="flex items-center justify-between mb-6 print:hidden">
+			<h1 class="text-2xl font-bold text-gray-900">{ data.ModelTitle } — 結果</h1>
+			<div class="flex items-center gap-3">
+				<button
+					onclick="window.print()"
+					class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+				>
+					PDF として保存
+				</button>
+				<a href="/" class="text-sm text-gray-500 hover:text-gray-700 underline">← モデル選択に戻る</a>
+			</div>
+		</div>
+		<!-- レーダーチャート -->
+		<section class="mb-8 rounded-xl border border-gray-200 bg-white shadow-sm p-6">
+			<h2 class="text-base font-semibold text-gray-800 mb-1">データ成熟度スコア</h2>
+			<p class="text-sm text-gray-500 mb-4">{ data.ModelTitle }</p>
+			<div class="flex justify-center">
+				<canvas
+					id="radar-chart"
+					data-labels={ data.LabelsJSON }
+					data-scores={ data.ScoresJSON }
+					data-selected={ data.SelectedJSON }
+					data-point-colors={ data.PointColorsJSON }
+					data-min={ fmt.Sprintf("%d", data.MinLevel) }
+					data-max={ fmt.Sprintf("%d", data.MaxLevel) }
+					class="w-full"
+				></canvas>
+			</div>
+		</section>
+		<!-- 結果一覧 -->
+		<section id="result-answers">
+			<h2 class="text-base font-semibold text-gray-800 mb-4">回答結果一覧</h2>
+			for _, tg := range data.TopicGroups {
+				if tg.Selected {
+					<details class="mb-4 rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+						<summary class="cursor-pointer select-none list-none flex items-center justify-between px-5 py-3 hover:bg-gray-50">
+							<h3 class="font-semibold text-gray-800">{ tg.Topic }</h3>
+							<span class="text-sm font-bold text-blue-600">スコア: { fmt.Sprintf("%d", tg.Score) }</span>
+						</summary>
+						<div class="divide-y divide-gray-100">
+							for _, r := range tg.Results {
+								<div class={ "px-5 py-4 " + shared.LevelBgClass(r.SelectedLevel) }>
+									<div class="text-sm font-medium text-gray-800 mb-1 [&_a]:text-blue-600 [&_a]:underline [&_a]:decoration-blue-400 [&_a]:hover:text-blue-800">
+										@templ.Raw(r.Summary)
+									</div>
+									<p class={ "text-sm font-semibold " + shared.LevelTextClass(r.SelectedLevel) }>
+										レベル { fmt.Sprintf("%d", r.SelectedLevel) }
+										if r.SelectedName != "" {
+											— { r.SelectedName }
+										}
+									</p>
+									<div class="text-sm text-gray-600 mt-0.5 [&_a]:text-blue-600 [&_a]:underline [&_a]:decoration-blue-400 [&_a]:hover:text-blue-800">
+										@templ.Raw(r.SelectedText)
+									</div>
+								</div>
+							}
+						</div>
+					</details>
+				} else {
+					<div class="mb-4 rounded-xl border border-gray-200 bg-gray-50 shadow-sm overflow-hidden">
+						<div class="flex items-center justify-between px-5 py-3">
+							<h3 class="font-semibold text-gray-400">{ tg.Topic }</h3>
+							<span class="text-sm text-gray-400">（未選択）</span>
+						</div>
+					</div>
+				}
+			}
+		</section>
+	</div>
+	<script>
+		openLinksInNewTab('result-answers');
+
+		// 印刷時にアコーディオンを全展開し、印刷後に元の状態に戻す
+		window.addEventListener('beforeprint', function() {
+			document.querySelectorAll('#result-answers details').forEach(function(d) {
+				d.dataset.wasOpen = d.open ? '1' : '0';
+				d.open = true;
+			});
+		});
+		window.addEventListener('afterprint', function() {
+			document.querySelectorAll('#result-answers details').forEach(function(d) {
+				d.open = d.dataset.wasOpen === '1';
+				delete d.dataset.wasOpen;
+			});
+		});
+	</script>
+	<script>
+		(function() {
+			var canvas = document.getElementById('radar-chart');
+			if (!canvas) return;
+			var labels   = JSON.parse(canvas.dataset.labels);
+			var scores   = JSON.parse(canvas.dataset.scores);
+			var selected    = JSON.parse(canvas.dataset.selected);
+			var pointColors = JSON.parse(canvas.dataset.pointColors);
+			var minLevel = parseInt(canvas.dataset.min, 10);
+			var maxLevel = parseInt(canvas.dataset.max, 10);
+
+			new Chart(canvas, {
+				type: 'radar',
+				data: {
+					labels: labels,
+					datasets: [{
+						data: scores,
+						backgroundColor: 'rgba(59,130,246,0.15)',
+						borderColor: 'rgb(59,130,246)',
+						borderWidth: 2,
+						pointBackgroundColor: pointColors,
+						pointBorderColor: pointColors,
+						pointRadius: 5,
+					}]
+				},
+				options: {
+					scales: {
+						r: {
+							min: minLevel - 1,
+							max: maxLevel,
+							ticks: { stepSize: 1, font: { size: 10 }, callback: function(v) { return v === minLevel - 1 ? '' : v; } },
+							pointLabels: {
+								color: function(ctx) {
+									return selected[ctx.index] ? '#111827' : '#9CA3AF';
+								},
+								font: { size: 11 },
+								callback: function(label) {
+									var maxLen = 9;
+									if (label.length <= maxLen) return label;
+									var lines = [];
+									for (var i = 0; i < label.length; i += maxLen) {
+										lines.push(label.slice(i, i + maxLen));
+									}
+									return lines;
+								}
+							}
+						}
+					},
+					plugins: { legend: { display: false } }
+				}
+			});
+		})();
+	</script>
+}
+
+// Result は結果表示画面のフルページ。
+templ Result(data ResultData) {
+	@layout.Base("結果", true) {
+		@ResultBody(data)
+	}
+}

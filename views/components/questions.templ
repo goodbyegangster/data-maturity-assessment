@@ -1,0 +1,72 @@
+package components
+
+import (
+	"data-maturity-assessment/views/shared"
+	"fmt"
+)
+
+// LevelOption はアセスメント質問の各回答選択肢を表す。
+type LevelOption struct {
+	Key  int
+	Name string // 成熟度レベル名（例: "初期 / 即席(その場限り)"）
+	Text string // アセスメント固有の説明文
+}
+
+// AssessmentOption はアセスメント質問と整列済みの回答選択肢を表す。
+type AssessmentOption struct {
+	ID      int
+	Summary string
+	Levels  []LevelOption // Key の昇順でソート済み
+}
+
+// TopicGroup はトピックエリアとそれに属するアセスメント質問をまとめる。
+type TopicGroup struct {
+	Topic   string
+	Options []AssessmentOption
+}
+
+// QuestionAccordion はアセスメント質問一覧をトピックごとのアコーディオンで表示する。
+// GET /assessment/questions の Partial レスポンスおよび測定画面の初期表示に使用する。
+templ QuestionAccordion(groups []TopicGroup) {
+	for _, group := range groups {
+		<details class="mb-4 rounded-lg border border-gray-200 bg-white shadow-sm">
+			<summary class="cursor-pointer select-none px-5 py-3 font-semibold text-gray-800 hover:bg-gray-50 list-none flex items-center justify-between">
+				<span>{ group.Topic }</span>
+				<span class="flex items-center gap-3">
+					<span class="text-xs font-normal text-gray-500">{ fmt.Sprintf("%d 問", len(group.Options)) }</span>
+					<span class="text-gray-400 text-sm">▼</span>
+				</span>
+			</summary>
+			<div class="divide-y divide-gray-100">
+				for _, opt := range group.Options {
+					<fieldset class="px-5 py-4">
+						<legend class="mb-3 text-sm font-medium text-gray-800 leading-relaxed [&_a]:text-blue-600 [&_a]:underline [&_a]:decoration-blue-400 [&_a]:hover:text-blue-800">
+							@templ.Raw(opt.Summary)
+						</legend>
+						<div class="space-y-2">
+							for _, lv := range opt.Levels {
+								<label class={ "flex items-start gap-3 rounded-md p-2 cursor-pointer " + shared.LevelInteractiveClass(lv.Key) }>
+									<input
+										type="radio"
+										name={ fmt.Sprintf("answers[%d]", opt.ID) }
+										value={ fmt.Sprintf("%d", lv.Key) }
+										class="mt-0.5 shrink-0 accent-blue-600"
+									/>
+									<span class="text-sm text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a]:decoration-blue-400 [&_a]:hover:text-blue-800">
+										<span class="font-semibold text-gray-900">レベル { fmt.Sprintf("%d", lv.Key) }</span>
+										if lv.Name != "" {
+											<span class="text-gray-500"> — { lv.Name }</span>
+										}
+										<br/>
+										@templ.Raw(lv.Text)
+									</span>
+								</label>
+							}
+						</div>
+					</fieldset>
+				}
+			</div>
+		</details>
+	}
+	<script>openLinksInNewTab('questions-container');</script>
+}

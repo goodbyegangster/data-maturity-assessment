@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UK Data Maturity Assessment Data Structure",
+  "type": "object",
+  "required": ["title", "model", "modelId", "modelDescription", "maturityLevels", "themeAreas", "topicAreas", "assessments"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "評価モデルのタイトル"
+    },
+    "model": {
+      "type": "string",
+      "description": "評価モデルの識別子"
+    },
+    "modelId": {
+      "type": "integer",
+      "description": "評価モデルのID"
+    },
+    "modelDescription": {
+      "type": "string",
+      "description": "評価モデルの説明"
+    },
+    "maturityLevels": {
+      "type": "array",
+      "description": "成熟度レベルの定義 (1-5)",
+      "items": {
+        "type": "object",
+        "required": ["level", "name", "description"],
+        "properties": {
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "themeAreas": {
+      "type": "array",
+      "description": "テーマ定義(UK版独自)",
+      "items": {
+        "type": "object",
+        "required": ["theme", "description"],
+        "properties": {
+          "theme": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "topicAreas": {
+      "type": "array",
+      "description": "評価対象のトピック領域",
+      "items": {
+        "type": "object",
+        "required": ["topic", "summary", "concept", "scopeTheme"],
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "トピック名"
+          },
+          "summary": {
+            "type": "string",
+            "description": "トピックの要約"
+          },
+          "concept": {
+            "type": "string",
+            "description": "関連する概念（Markdownリスト形式）"
+          },
+          "scopeTheme": {
+            "type": "array",
+            "description": "関連するテーマのリスト",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "assessments": {
+      "type": "array",
+      "description": "個別の評価質問リスト",
+      "items": {
+        "type": "object",
+        "required": ["id", "topic", "summary", "theme", "levels"],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "topic": {
+            "type": "string",
+            "description": "topicAreas の topic と一致する文字列"
+          },
+          "summary": {
+            "type": "string",
+            "description": "質問の概要"
+          },
+          "theme": {
+            "type": "string",
+            "description": "themeAreas の theme と一致する文字列"
+          },
+          "levels": {
+            "type": "object",
+            "description": "レベルごとの定義文。キーは 1-5 の数値",
+            "patternProperties": {
+              "^[1-5]$": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  }
+}

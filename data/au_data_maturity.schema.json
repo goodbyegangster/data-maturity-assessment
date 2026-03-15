@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AU Data Maturity Assessment Data Structure",
+  "type": "object",
+  "required": ["title", "model", "modelId", "modelDescription", "maturityLevels", "topicAreas", "assessments"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "評価モデルのタイトル"
+    },
+    "model": {
+      "type": "string",
+      "description": "評価モデルの識別子"
+    },
+    "modelId": {
+      "type": "integer",
+      "description": "評価モデルのID"
+    },
+    "modelDescription": {
+      "type": "string",
+      "description": "評価モデルの説明"
+    },
+    "maturityLevels": {
+      "type": "array",
+      "description": "成熟度レベルの定義 (0-5)",
+      "items": {
+        "type": "object",
+        "required": ["level", "name", "description"],
+        "properties": {
+          "level": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "topicAreas": {
+      "type": "array",
+      "description": "評価対象のトピック領域",
+      "items": {
+        "type": "object",
+        "required": ["topic", "description"],
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "トピック名"
+          },
+          "description": {
+            "type": "string",
+            "description": "トピックの概要説明（Markdownのリスト形式など）"
+          }
+        }
+      }
+    },
+    "assessments": {
+      "type": "array",
+      "description": "個別の評価質問リスト",
+      "items": {
+        "type": "object",
+        "required": ["id", "topic", "summary", "levels"],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "topic": {
+            "type": "string",
+            "description": "topicAreas の topic と一致する文字列"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string",
+            "description": "質問の概要"
+          },
+          "levels": {
+            "type": "object",
+            "description": "レベルごとの定義文。キーは 0-5 の数値（または文字列）",
+            "patternProperties": {
+              "^[0-5]$": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  }
+}
